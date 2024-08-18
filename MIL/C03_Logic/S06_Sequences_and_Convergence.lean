@@ -35,7 +35,17 @@ theorem convergesTo_add {s t : ℕ → ℝ} {a b : ℝ}
   rcases cs (ε / 2) ε2pos with ⟨Ns, hs⟩
   rcases ct (ε / 2) ε2pos with ⟨Nt, ht⟩
   use max Ns Nt
-  sorry
+  intro n nge
+  have hsn : |s n - a| < ε / 2 := by
+    apply hs
+    apply le_trans (le_max_left _ _) nge
+  have htn : |t n - b| < ε / 2 := by
+    apply ht
+    apply le_trans (le_max_right _ _) nge
+  calc
+    |s n + t n - (a + b)| = |(s n - a) + (t n - b)| := by ring
+    _ ≤ |s n - a| + |t n - b| := by apply abs_add
+    _ < ε := by linarith
 
 theorem convergesTo_mul_const {s : ℕ → ℝ} {a : ℝ} (c : ℝ) (cs : ConvergesTo s a) :
     ConvergesTo (fun n ↦ c * s n) (c * a) := by
@@ -46,13 +56,30 @@ theorem convergesTo_mul_const {s : ℕ → ℝ} {a : ℝ} (c : ℝ) (cs : Conver
     rw [h]
     ring
   have acpos : 0 < |c| := abs_pos.mpr h
-  sorry
+  intro ε εpos; dsimp
+  rcases cs (ε / |c|) (div_pos εpos acpos) with ⟨Ns, hs⟩
+  use Ns
+  intro n nge
+  have hs : |s n - a| < ε / |c| := hs n nge
+  calc
+    |c * s n - c * a| = |c * (s n - a)| := by ring
+    _ = |c| * |s n - a| := by rw [abs_mul]
+    _ < |c| * (ε / |c|) := by apply mul_lt_mul_of_pos_left hs acpos
+    _ = |c| / |c| * ε := by ring
+    _ = ε := by rw [div_self (by linarith), one_mul]
 
 theorem exists_abs_le_of_convergesTo {s : ℕ → ℝ} {a : ℝ} (cs : ConvergesTo s a) :
     ∃ N b, ∀ n, N ≤ n → |s n| < b := by
   rcases cs 1 zero_lt_one with ⟨N, h⟩
   use N, |a| + 1
-  sorry
+  intro n nge
+  calc
+    |s n| = |s n - a + a| := by ring
+    _ ≤ |s n - a| + |a| := by apply abs_add
+    _ < 1 + |a| := by
+      apply add_lt_add_right
+      exact (h _ nge)
+    _ = |a| + 1 := by ring
 
 theorem aux {s t : ℕ → ℝ} {a : ℝ} (cs : ConvergesTo s a) (ct : ConvergesTo t 0) :
     ConvergesTo (fun n ↦ s n * t n) 0 := by
@@ -62,7 +89,16 @@ theorem aux {s t : ℕ → ℝ} {a : ℝ} (cs : ConvergesTo s a) (ct : Converges
   have Bpos : 0 < B := lt_of_le_of_lt (abs_nonneg _) (h₀ N₀ (le_refl _))
   have pos₀ : ε / B > 0 := div_pos εpos Bpos
   rcases ct _ pos₀ with ⟨N₁, h₁⟩
-  sorry
+  use max N₀ N₁
+  intro n nge
+  simp
+  calc
+    |s n * t n| = |s n| * |t n| := by rw [abs_mul]
+    _ ≤ B * |t n| := by apply mul_le_mul_of_nonneg_right (le_of_lt (h₀ n (le_trans (le_max_left _ _) nge))) (abs_nonneg _)
+    _ = B * |t n - 0| := by ring
+    _ < B * (ε / B) := by apply mul_lt_mul_of_pos_left (h₁ n (le_trans (le_max_right _ _) nge)) Bpos
+    _ = (B / B) * ε := by ring
+    _ = ε := by rw [div_self (by linarith), one_mul]
 
 theorem convergesTo_mul {s t : ℕ → ℝ} {a b : ℝ}
       (cs : ConvergesTo s a) (ct : ConvergesTo t b) :
@@ -100,4 +136,3 @@ def ConvergesTo' (s : α → ℝ) (a : ℝ) :=
   ∀ ε > 0, ∃ N, ∀ n ≥ N, |s n - a| < ε
 
 end
-

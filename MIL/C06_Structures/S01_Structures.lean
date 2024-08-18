@@ -81,14 +81,17 @@ theorem addAlt_comm (a b : Point) : addAlt a b = addAlt b a := by
   repeat' apply add_comm
 
 protected theorem add_assoc (a b c : Point) : (a.add b).add c = a.add (b.add c) := by
-  sorry
+  repeat rw [add]
+  ext <;> dsimp <;> group
 
 def smul (r : ℝ) (a : Point) : Point :=
-  sorry
+  ⟨r * a.x, r * a.y, r * a.z⟩
 
 theorem smul_distrib (r : ℝ) (a b : Point) :
     (smul r a).add (smul r b) = smul r (a.add b) := by
-  sorry
+  repeat rw [add, smul]
+  rw [smul]
+  ext <;> dsimp <;> ring
 
 end Point
 
@@ -126,9 +129,23 @@ def midpoint (a b : StandardTwoSimplex) : StandardTwoSimplex
   sum_eq := by field_simp; linarith [a.sum_eq, b.sum_eq]
 
 def weightedAverage (lambda : Real) (lambda_nonneg : 0 ≤ lambda) (lambda_le : lambda ≤ 1)
-    (a b : StandardTwoSimplex) : StandardTwoSimplex :=
-  sorry
-
+    (a b : StandardTwoSimplex) : StandardTwoSimplex
+    where
+  x := lambda * a.x + (1 - lambda) * b.x
+  y := lambda * a.y + (1 - lambda) * b.y
+  z := lambda * a.z + (1 - lambda) * b.z
+  x_nonneg := by
+    apply add_nonneg <;> apply mul_nonneg <;> norm_num [lambda_nonneg, lambda_le, a.x_nonneg, b.x_nonneg]
+  y_nonneg := by
+    apply add_nonneg <;> apply mul_nonneg <;> norm_num [lambda_nonneg, lambda_le, a.y_nonneg, b.y_nonneg]
+  z_nonneg := by
+    apply add_nonneg <;> apply mul_nonneg <;> norm_num [lambda_nonneg, lambda_le, a.z_nonneg, b.z_nonneg]
+  sum_eq := by
+    have h : lambda * (a.x + a.y + a.z) + (1 - lambda) * (b.x + b.y + b.z) = 1
+      := by rw [a.sum_eq, b.sum_eq]; ring
+    symm
+    nth_rw 1 [← h]
+    ring
 end
 
 end StandardTwoSimplex
@@ -155,7 +172,21 @@ def midpoint (n : ℕ) (a b : StandardSimplex n) : StandardSimplex n
       a.sum_eq_one, b.sum_eq_one]
     field_simp
 
+
+def weightedAverage (n : ℕ) (lambda : Real) (lambda_nonneg : 0 ≤ lambda) (lambda_le : lambda ≤ 1)
+    (a b : StandardSimplex n) : StandardSimplex n
+    where
+  V i := lambda * a.V i + (1 - lambda) * b.V i
+  NonNeg := by
+    intro i
+    apply add_nonneg <;> apply mul_nonneg <;> norm_num [lambda_nonneg, lambda_le, a.NonNeg i, b.NonNeg i]
+  sum_eq_one := by
+    rw [Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.mul_sum, a.sum_eq_one, b.sum_eq_one]
+    ring
+
 end StandardSimplex
+
+end
 
 structure IsLinear (f : ℝ → ℝ) where
   is_additive : ∀ x y, f (x + y) = f x + f y
@@ -206,4 +237,3 @@ variable (s : StdSimplex)
 #check s.2
 
 end
-

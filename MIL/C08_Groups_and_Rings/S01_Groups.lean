@@ -9,12 +9,15 @@ example {M : Type*} [Monoid M] (x : M) : x * 1 = x := mul_one x
 
 example {M : Type*} [AddCommMonoid M] (x y : M) : x + y = y + x := add_comm x y
 
+-- Notation for the type of multiplicative monoid homomorphisms
 example {M N : Type*} [Monoid M] [Monoid N] (x y : M) (f : M →* N) : f (x * y) = f x * f y :=
   f.map_mul x y
 
+-- Notation for the type of additive monoid homomorphisms
 example {M N : Type*} [AddMonoid M] [AddMonoid N] (f : M →+ N) : f 0 = 0 :=
   f.map_zero
 
+-- Composition of homomorphisms
 example {M N P : Type*} [AddMonoid M] [AddMonoid N] [AddMonoid P]
     (f : M →+ N) (g : N →+ P) : M →+ P := g.comp f
 
@@ -32,14 +35,19 @@ example {G H : Type*} [Group G] [Group H] (x y : G) (f : G →* H) : f (x * y) =
 example {G H : Type*} [Group G] [Group H] (x : G) (f : G →* H) : f (x⁻¹) = (f x)⁻¹ :=
   f.map_inv x
 
+-- If f is an arbitrary function such that f(x)f(y) = f(xy), then f is a group homomorphism once x,y ∈ G.
+-- But for monoids, we also require that f(1) = 1; yet this comes automatically from the group structure for groups.
+-- The function MonoidHom.mk' allows us to construct group homomorphisms from arbitrary functions without having to show that f(1) = 1.
 example {G H : Type*} [Group G] [Group H] (f : G → H) (h : ∀ x y, f (x * y) = f x * f y) :
     G →* H :=
   MonoidHom.mk' f h
 
+-- Isomorphisms
 example {G H : Type*} [Group G] [Group H] (f : G ≃* H) :
     f.trans f.symm = MulEquiv.refl G :=
   f.self_trans_symm
 
+-- noncomputable construction of an isomorphism from a bijective homomorphism
 noncomputable example {G H : Type*} [Group G] [Group H]
     (f : G →* H) (h : Function.Bijective f) :
     G ≃* H :=
@@ -53,6 +61,7 @@ example {G : Type*} [Group G] (H : Subgroup G) {x : G} (hx : x ∈ H) :
     x⁻¹ ∈ H :=
   H.inv_mem hx
 
+-- ℤ is isomorphic to a subgroup of ℚ
 example : AddSubgroup ℚ where
   carrier := Set.range ((↑) : ℤ → ℚ)
   add_mem' := by

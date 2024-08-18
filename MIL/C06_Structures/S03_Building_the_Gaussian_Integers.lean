@@ -180,7 +180,19 @@ end Int
 
 theorem sq_add_sq_eq_zero {α : Type*} [LinearOrderedRing α] (x y : α) :
     x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 := by
-  sorry
+  constructor
+  · intro h
+    rw [← zero_add 0] at h
+    apply le_of_eq at h
+    rw [add_le_add_iff_of_ge (sq_nonneg x) (sq_nonneg y)] at h
+    rcases h with ⟨h1, h2⟩
+    symm at h1
+    symm at h2
+    rw [sq_eq_zero_iff] at h1
+    rw [sq_eq_zero_iff] at h2
+    exact ⟨h1, h2⟩
+  · rintro ⟨h1, h2⟩
+    simp [h1, h2]
 namespace GaussInt
 
 def norm (x : GaussInt) :=
@@ -188,13 +200,34 @@ def norm (x : GaussInt) :=
 
 @[simp]
 theorem norm_nonneg (x : GaussInt) : 0 ≤ norm x := by
-  sorry
+  simp [norm]
+  apply add_nonneg <;> apply sq_nonneg
 theorem norm_eq_zero (x : GaussInt) : norm x = 0 ↔ x = 0 := by
-  sorry
+  simp [norm]
+  rw [sq_add_sq_eq_zero, zero_def]
+  constructor
+  · rintro ⟨h1, h2⟩
+    ext <;> simp [h1, h2]
+  · intro h
+    simp [h]
 theorem norm_pos (x : GaussInt) : 0 < norm x ↔ x ≠ 0 := by
-  sorry
+  simp [norm]
+  constructor
+  · intro h xzero
+    rw [xzero] at h
+    dsimp at h
+    linarith
+  · intro xnz
+    contrapose! xnz
+    have h : x.re ^ 2 + x.im ^ 2 ≥ 0 := by
+      apply add_nonneg <;> apply sq_nonneg
+    have h : x.re ^ 2 + x.im ^ 2 = 0 := by
+      exact le_antisymm xnz h
+    rw [sq_add_sq_eq_zero] at h
+    ext <;> simp [h.1, h.2]
 theorem norm_mul (x y : GaussInt) : norm (x * y) = norm x * norm y := by
-  sorry
+  simp [norm, mul_def]
+  ring
 def conj (x : GaussInt) : GaussInt :=
   ⟨x.re, -x.im⟩
 

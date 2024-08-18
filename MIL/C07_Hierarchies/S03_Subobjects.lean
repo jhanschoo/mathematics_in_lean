@@ -3,7 +3,12 @@ import Mathlib.GroupTheory.QuotientGroup
 
 set_option autoImplicit true
 
+-- recall that Set α is the type of functions from α to Prop
+-- To support the notion of subobjects (e.g. subgroups of groups),
+-- recall FunLike for morphisms establishing their relationship against the set function
+-- similarly, SetLike establishes the relationship between a subobjoct and its carrier set
 
+-- we give an example of what we need to bundle a submonoid
 @[ext]
 structure Submonoid₁ (M : Type) [Monoid M] where
   /-- The carrier of a submonoid. -/
@@ -19,15 +24,17 @@ instance [Monoid M] : SetLike (Submonoid₁ M) M where
   coe_injective' := Submonoid₁.ext
 
 
-
+-- the above definition allows us to show that 1 is in any submonoid without having to appeal to the carrier definition directly
 example [Monoid M] (N : Submonoid₁ M) : 1 ∈ N := N.one_mem
-
+-- We can also talk about N as though it were of type Set M
 example [Monoid M] (N : Submonoid₁ M) (α : Type) (f : M → α) := f '' N
 
-
+-- We also have a coercion from (N : Submonoid₁ M) to (N : Type), (hence we can write (x : N))
+-- Check the tooltip documentation for the .property in the below example
 example [Monoid M] (N : Submonoid₁ M) (x : N) : (x : M) ∈ N := x.property
 
-
+-- we now show that a submonoid is a monoid in its own right
+-- SetCoe.ext tells us that the coercion from N to M is injective, allowing us to reuse equality lemmas of M in N
 instance SubMonoid₁Monoid [Monoid M] (N : Submonoid₁ M) : Monoid N where
   mul := fun x y ↦ ⟨x*y, N.mul_mem x.property y.property⟩
   mul_assoc := fun x y z ↦ SetCoe.ext (mul_assoc (x : M) y z)
@@ -59,17 +66,18 @@ instance [Monoid M] : Inf (Submonoid₁ M) :=
       one_mem := ⟨S₁.one_mem, S₂.one_mem⟩
       mul_mem := fun ⟨hx, hx'⟩ ⟨hy, hy'⟩ ↦ ⟨S₁.mul_mem hx hy, S₂.mul_mem hx' hy'⟩ }⟩
 
+-- TODO: an analogous development for subgroups
 
 example [Monoid M] (N P : Submonoid₁ M) : Submonoid₁ M := N ⊓ P
 
-
+-- If N ≤ M, then N partitions M; the Setoid M instance here is M furnished with this partition
 def Submonoid.Setoid [CommMonoid M] (N : Submonoid M) : Setoid M  where
   r := fun x y ↦ ∃ w ∈ N, ∃ z ∈ N, x*w = y*z
   iseqv := {
     refl := fun x ↦ ⟨1, N.one_mem, 1, N.one_mem, rfl⟩
     symm := fun ⟨w, hw, z, hz, h⟩ ↦ ⟨z, hz, w, hw, h.symm⟩
-    trans := by
-      sorry
+    trans := @fun a b c ⟨w, hw, z, hz, h⟩ ⟨w', hw', z', hz', h'⟩ ↦
+      ⟨w*w', N.mul_mem hw hw', z'*z, N.mul_mem hz' hz, by rw [← mul_assoc, ← mul_assoc, h, ← h', mul_assoc, mul_assoc, mul_comm w']⟩
   }
 
 instance [CommMonoid M] : HasQuotient M (Submonoid M) where
@@ -79,12 +87,27 @@ def QuotientMonoid.mk [CommMonoid M] (N : Submonoid M) : M → M ⧸ N := Quotie
 
 instance [CommMonoid M] (N : Submonoid M) : Monoid (M ⧸ N) where
   mul := Quotient.map₂' (· * ·) (by
-      sorry
+      rintro x₁ x₂ ⟨x₁', x₁'N, x₂', x₂'N, hx⟩ y₁ y₂ ⟨y₁', y₁'N, y₂', y₂'N, hy⟩
+      use x₁'*y₁', N.mul_mem x₁'N y₁'N, x₂'*y₂', N.mul_mem x₂'N y₂'N
+      dsimp
+      rw [← mul_assoc, ← mul_assoc, mul_assoc x₁, mul_assoc x₂, mul_comm y₁, mul_comm y₂, ← mul_assoc, ← mul_assoc, mul_assoc, hx, hy, ← mul_assoc]
         )
   mul_assoc := by
-      sorry
+      rintro ⟨a⟩ ⟨b⟩ ⟨c⟩
+      apply Quotient.sound
+      dsimp
+      rw [mul_assoc]
+      apply @Setoid.refl M N.Setoid
   one := QuotientMonoid.mk N 1
   one_mul := by
-      sorry
+      rintro ⟨a⟩
+      apply Quotient.sound
+      dsimp
+      rw [one_mul]
+      apply @Setoid.refl M N.Setoid
   mul_one := by
-      sorry
+      rintro ⟨a⟩
+      apply Quotient.sound
+      dsimp
+      rw [mul_one]
+      apply @Setoid.refl M N.Setoid

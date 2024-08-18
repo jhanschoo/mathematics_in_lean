@@ -55,7 +55,13 @@ def permGroup {α : Type*} : Group₁ (Equiv.Perm α)
 
 structure AddGroup₁ (α : Type*) where
   (add : α → α → α)
-  -- fill in the rest
+  (zero : α)
+  (neg : α → α)
+  (add_assoc : ∀ x y z : α, add (add x y) z = add x (add y z))
+  (add_zero : ∀ x : α, add x zero = x)
+  (zero_add : ∀ x : α, add zero x = x)
+  (add_left_neg : ∀ x : α, add (neg x) x = zero)
+
 @[ext]
 structure Point where
   x : ℝ
@@ -67,11 +73,23 @@ namespace Point
 def add (a b : Point) : Point :=
   ⟨a.x + b.x, a.y + b.y, a.z + b.z⟩
 
-def neg (a : Point) : Point := sorry
+def neg (a : Point) : Point :=
+  ⟨-a.x, -a.y, -a.z⟩
 
-def zero : Point := sorry
+def zero : Point :=
+  ⟨0, 0, 0⟩
 
-def addGroupPoint : AddGroup₁ Point := sorry
+def addGroupPoint : AddGroup₁ Point where
+  add := add
+  zero := zero
+  neg := Point.neg
+  add_assoc := by
+    intro x y z
+    ext <;> dsimp [add] <;> simp [add_assoc]
+  add_zero := by intro x; ext <;> dsimp [add, zero] <;> simp [add_zero]
+  zero_add := by intro x; ext <;> dsimp [add, zero] <;> simp [zero_add]
+  add_left_neg := by intro x; ext <;> dsimp [add, neg, zero] <;> simp [add_left_neg]
+
 
 end Point
 
@@ -170,4 +188,34 @@ end
 
 class AddGroup₂ (α : Type*) where
   add : α → α → α
-  -- fill in the rest
+  zero : α
+  neg : α → α
+  add_assoc : ∀ x y z : α, add (add x y) z = add x (add y z)
+  add_zero : ∀ x : α, add x zero = x
+  zero_add : ∀ x : α, add zero x = x
+  add_left_neg : ∀ x : α, add (neg x) x = zero
+
+instance {α : Type*} [AddGroup₂ α] : Add α where
+  add := AddGroup₂.add
+
+instance {α : Type*} [AddGroup₂ α] : Zero α where
+  zero := AddGroup₂.zero
+
+instance {α : Type*} [AddGroup₂ α] : Neg α where
+  neg := AddGroup₂.neg
+
+instance : AddGroup₂ Point where
+  add := Point.add
+  zero := Point.zero
+  neg := Point.neg
+  add_assoc := by
+    intro x y z
+    ext <;> dsimp [Point.add] <;> simp [add_assoc]
+  add_zero := by intro x; ext <;> dsimp [Point.add, Point.zero] <;> simp [add_zero]
+  zero_add := by intro x; ext <;> dsimp [Point.add, Point.zero] <;> simp [zero_add]
+  add_left_neg := by intro x; ext <;> dsimp [Point.add, Point.neg, Point.zero] <;> simp [add_left_neg]
+section
+variable {α : Type*} [AddGroup₂ α] (x y : α)
+
+#check -(x + y)
+end

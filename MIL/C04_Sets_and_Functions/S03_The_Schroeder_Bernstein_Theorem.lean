@@ -28,10 +28,13 @@ theorem sb_right_inv {x : α} (hx : x ∉ sbSet f g) : g (invFun g x) = x := by
     rw [sbSet, mem_iUnion]
     use 0
     rw [sbAux, mem_diff]
-    sorry
+    exact ⟨mem_univ _, hx⟩
   have : ∃ y, g y = x := by
-    sorry
-  sorry
+    rcases this with ⟨y, ⟨_,hy⟩⟩
+    use y
+  dsimp [invFun]
+  rw [dif_pos this]
+  exact Exists.choose_spec this
 
 theorem sb_injective (hf : Injective f) : Injective (sbFun f g) := by
   set A := sbSet f g with A_def
@@ -50,15 +53,20 @@ theorem sb_injective (hf : Injective f) : Injective (sbFun f g) := by
       rw [if_pos x₁A, if_neg x₂nA] at hxeq
       rw [A_def, sbSet, mem_iUnion] at x₁A
       have x₂eq : x₂ = g (f x₁) := by
-        sorry
+        rw [hxeq]
+        rw [A_def] at x₂nA
+        exact (sb_right_inv f g x₂nA).symm
       rcases x₁A with ⟨n, hn⟩
       rw [A_def, sbSet, mem_iUnion]
       use n + 1
       simp [sbAux]
       exact ⟨x₁, hn, x₂eq.symm⟩
-    sorry
+    rw [if_pos x₁A, if_pos x₂A] at hxeq
+    exact hf hxeq
   push_neg  at xA
-  sorry
+  rw [if_neg xA.1, if_neg xA.2] at hxeq
+  rw [← sb_right_inv f g xA.1, ← sb_right_inv f g xA.2]
+  rw [← hxeq]
 
 theorem sb_surjective (hg : Injective g) : Surjective (sbFun f g) := by
   set A := sbSet f g with A_def
@@ -77,7 +85,12 @@ theorem sb_surjective (hg : Injective g) : Surjective (sbFun f g) := by
       exact ⟨n, xmem⟩
     simp only [h_def, sbFun, if_pos this]
     exact hg hx
-  sorry
+  use g y
+  apply hg
+  simp only [h_def, sbFun, if_neg gyA, invFun]
+  have : ∃ y', g y' = g y := by use y
+  rw [dif_pos this]
+  exact Exists.choose_spec this
 
 end
 
